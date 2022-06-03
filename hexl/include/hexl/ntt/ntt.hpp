@@ -96,8 +96,10 @@ class NTT {
   /// input_mod_factor * q). Must be 1, 2 or 4.
   /// @param[in] output_mod_factor Returns output \p result in [0,
   /// output_mod_factor * q). Must be 1 or 4.
+  /// @param[in] batch Number of batched data on which to compute the NTT
   void ComputeForward(uint64_t* result, const uint64_t* operand,
-                      uint64_t input_mod_factor, uint64_t output_mod_factor);
+                      uint64_t input_mod_factor, uint64_t output_mod_factor,
+                      int batch = 1);
 
   /// Compute inverse NTT. Results are bit-reversed.
   /// @param[out] result Stores the result
@@ -106,8 +108,10 @@ class NTT {
   /// input_mod_factor * q). Must be 1 or 2.
   /// @param[in] output_mod_factor Returns output \p result in [0,
   /// output_mod_factor * q). Must be 1 or 2.
+  /// @param[in] batch Number of batched data on which to compute the inv NTT
   void ComputeInverse(uint64_t* result, const uint64_t* operand,
-                      uint64_t input_mod_factor, uint64_t output_mod_factor);
+                      uint64_t input_mod_factor, uint64_t output_mod_factor,
+                      int batch = 1);
 
   /// @brief Returns the minimal 2N'th root of unity
   uint64_t GetMinimalRootOfUnity() const { return m_w; }

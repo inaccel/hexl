@@ -76,6 +76,7 @@ For convenience, they are listed below:
 | HEXL_DOCS                     | ON / OFF | OFF     | Set to ON to enable building of documentation               |
 | HEXL_TESTING                  | ON / OFF | ON      | Set to ON to enable building of unit-tests                  |
 | HEXL_TREAT_WARNING_AS_ERROR   | ON / OFF | OFF     | Set to ON to treat all warnings as error                    |
+| HEXL_FPGA                     | ON / OFF | OFF     | Set to ON to enable InAccel FPGA acceleration               |
 
 ### Compiling Intel HEXL
 To compile Intel HEXL from source code, first clone the repository and change directories to the where the source has been cloned.

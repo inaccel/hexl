@@ -4,6 +4,9 @@
 #include "ntt/ntt-internal.hpp"
 
 #include <cstring>
+#ifdef HEXL_HAS_INACCEL
+#include <inaccel/coral>
+#endif
 #include <utility>
 
 #include "hexl/logging/logging.hpp"
@@ -20,6 +23,9 @@ namespace intel {
 namespace hexl {
 
 AllocatorStrategyPtr mallocStrategy = AllocatorStrategyPtr(new MallocStrategy);
+#ifdef HEXL_HAS_INACCEL
+AllocatorStrategyPtr inaccelStrategy = AllocatorStrategyPtr(new InAccelStrategy);
+#endif
 
 NTT::NTT(uint64_t degree, uint64_t q, uint64_t root_of_unity,
          std::shared_ptr<AllocatorBase> alloc_ptr)
@@ -187,7 +193,8 @@ bool NTT::CheckArguments(uint64_t degree, uint64_t modulus) {
 
 void NTT::ComputeForward(uint64_t* result, const uint64_t* operand,
                          uint64_t input_mod_factor,
-                         uint64_t output_mod_factor) {
+                         uint64_t output_mod_factor,
+                         int batch) {
   HEXL_CHECK(result != nullptr, "result == nullptr");
   HEXL_CHECK(operand != nullptr, "operand == nullptr");
   HEXL_CHECK(
@@ -198,6 +205,28 @@ void NTT::ComputeForward(uint64_t* result, const uint64_t* operand,
   HEXL_CHECK_BOUNDS(
       operand, m_degree, m_q * input_mod_factor,
       "value in operand exceeds bound " << m_q * input_mod_factor);
+#ifndef HEXL_HAS_INACCEL
+  HEXL_UNUSED(batch);
+#else
+  if (m_alloc == inaccelStrategy) {
+    const uint64_t* root_of_unity_powers = GetRootOfUnityPowers().data();
+    const uint64_t* precon_root_of_unity_powers =
+        GetPrecon64RootOfUnityPowers().data();
+
+    uint64_t *modulus = m_aligned_alloc.allocate(sizeof(uint64_t));
+    modulus[0] = m_q;
+
+    ForwardTransformToBitReverseInaccel(result, operand, m_degree, modulus,
+        root_of_unity_powers, precon_root_of_unity_powers, input_mod_factor,
+        output_mod_factor, batch);
+
+    m_aligned_alloc.deallocate(modulus, sizeof(uint64_t));
+
+    return;
+  }
+#endif
+
+HEXL_CHECK(batch == 1, "batch > 1 only supported in FPGA acceleration");
 
 #ifdef HEXL_HAS_AVX512IFMA
   if (has_avx512ifma && (m_q < s_max_fwd_ifma_modulus && (m_degree >= 16))) {
@@ -251,7 +280,8 @@ void NTT::ComputeForward(uint64_t* result, const uint64_t* operand,
 
 void NTT::ComputeInverse(uint64_t* result, const uint64_t* operand,
                          uint64_t input_mod_factor,
-                         uint64_t output_mod_factor) {
+                         uint64_t output_mod_factor,
+                         int batch) {
   HEXL_CHECK(result != nullptr, "result == nullptr");
   HEXL_CHECK(operand != nullptr, "operand == nullptr");
   HEXL_CHECK(input_mod_factor == 1 || input_mod_factor == 2,
@@ -260,6 +290,36 @@ void NTT::ComputeInverse(uint64_t* result, const uint64_t* operand,
              "output_mod_factor must be 1 or 2; got " << output_mod_factor);
   HEXL_CHECK_BOUNDS(operand, m_degree, m_q * input_mod_factor,
                     "operand exceeds bound " << m_q * input_mod_factor);
+#ifndef HEXL_HAS_INACCEL
+  HEXL_UNUSED(batch);
+#else
+  if (m_alloc == inaccelStrategy) {
+    const uint64_t* inv_root_of_unity_powers = GetInvRootOfUnityPowers().data();
+    const uint64_t* precon_inv_root_of_unity_powers =
+        GetPrecon64InvRootOfUnityPowers().data();
+
+    uint64_t *modulus = m_aligned_alloc.allocate(sizeof(uint64_t));
+    modulus[0] = m_q;
+
+    uint64_t *inv_n = m_aligned_alloc.allocate(sizeof(uint64_t));
+    uint64_t *inv_n_w = m_aligned_alloc.allocate(sizeof(uint64_t));
+    const uint64_t W = inv_root_of_unity_powers[m_degree - 1];
+    inv_n[0] = InverseMod(m_degree, modulus[0]);
+    inv_n_w[0] = MultiplyMod(inv_n[0], W, modulus[0]);
+
+    InverseTransformFromBitReverseInaccel(result, operand, m_degree, modulus,
+        inv_root_of_unity_powers, precon_inv_root_of_unity_powers,
+        input_mod_factor, output_mod_factor, inv_n, inv_n_w, batch);
+
+    m_aligned_alloc.deallocate(inv_n_w, sizeof(uint64_t));
+    m_aligned_alloc.deallocate(inv_n, sizeof(uint64_t));
+    m_aligned_alloc.deallocate(modulus, sizeof(uint64_t));
+
+    return;
+}
+#endif
+
+HEXL_CHECK(batch == 1, "batch > 1 only supported in FPGA acceleration");
 
 #ifdef HEXL_HAS_AVX512IFMA
   if (has_avx512ifma && (m_q < s_max_inv_ifma_modulus) && (m_degree >= 16)) {
