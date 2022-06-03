@@ -58,6 +58,7 @@ option(HEXL_BENCHMARK "Enable benchmarking" ON)
 option(HEXL_COVERAGE "Enables coverage for unit tests" OFF)
 option(HEXL_DOCS "Enable documentation building" OFF)
 option(HEXL_EXPERIMENTAL "Enable experimental features" OFF)
+option(HEXL_FPGA "Enable FPGA acceleration" OFF)
 option(HEXL_SHARED_LIB "Generate a shared library" OFF)
 option(HEXL_TESTING "Enables unit-tests" ON)
 option(HEXL_TREAT_WARNING_AS_ERROR "Treat all compile-time warnings as errors" OFF)
@@ -74,6 +75,7 @@ message(STATUS "HEXL_COVERAGE:                 ${HEXL_COVERAGE}")
 message(STATUS "HEXL_DEBUG:                    ${HEXL_DEBUG}")
 message(STATUS "HEXL_DOCS:                     ${HEXL_DOCS}")
 message(STATUS "HEXL_EXPERIMENTAL:             ${HEXL_EXPERIMENTAL}")
+message(STATUS "HEXL_FPGA:                     ${HEXL_FPGA}")
 message(STATUS "HEXL_SHARED_LIB:               ${HEXL_SHARED_LIB}")
 message(STATUS "HEXL_TESTING:                  ${HEXL_TESTING}")
 message(STATUS "HEXL_TREAT_WARNING_AS_ERROR:   ${HEXL_TREAT_WARNING_AS_ERROR}")
@@ -117,6 +119,15 @@ hexl_check_compile_flag("${HEXL_CMAKE_PATH}/test-avx512dq.cpp" HEXL_HAS_AVX512DQ
 hexl_check_compile_flag("${HEXL_CMAKE_PATH}/test-avx512ifma.cpp" HEXL_HAS_AVX512IFMA)
 hexl_check_compile_flag("${HEXL_CMAKE_PATH}/test-avx512vbmi2.cpp" HEXL_HAS_AVX512VBMI2)
 hexl_check_compile_flag("${HEXL_CMAKE_PATH}/test-avx256.cpp" HEXL_HAS_AVX256)
+
+#------------------------------------------------------------------------------
+# Set INACCEL (FPGA) flag
+#------------------------------------------------------------------------------
+if(HEXL_FPGA)
+message(STATUS "Setting HEXL_HAS_INACCEL")
+add_definitions(-DHEXL_HAS_INACCEL)
+set(HEXL_HAS_INACCEL "1")
+endif()
 
 # ------------------------------------------------------------------------------
 # Installation logic...

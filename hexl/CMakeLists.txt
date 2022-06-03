@@ -15,6 +15,12 @@ set(NATIVE_SRC
     number-theory/number-theory.cpp
 )
 
+if (HEXL_HAS_INACCEL)
+    list(APPEND NATIVE_SRC
+        ntt/ntt-inaccel.cpp
+    )
+endif()
+
 if (HEXL_EXPERIMENTAL)
     list(APPEND NATIVE_SRC
         experimental/seal/dyadic-multiply.cpp
@@ -150,6 +156,9 @@ else ()
     # Manually add cpu_features include directory
     target_include_directories(hexl
       PRIVATE $<TARGET_PROPERTY:cpu_features,INTERFACE_INCLUDE_DIRECTORIES>)
+endif()
+if (HEXL_HAS_INACCEL)
+    target_link_libraries(hexl PRIVATE coral-api)
 endif()
 
 install(TARGETS hexl DESTINATION ${CMAKE_INSTALL_LIBDIR})

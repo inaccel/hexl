@@ -4,6 +4,9 @@
 #pragma once
 
 #include <cstdlib>
+#ifdef HEXL_HAS_INACCEL
+#include <inaccel/shm>
+#endif
 #include <memory>
 #include <vector>
 
@@ -26,6 +29,22 @@ struct MallocStrategy : AllocatorBase {
 
 using AllocatorStrategyPtr = std::shared_ptr<AllocatorBase>;
 extern AllocatorStrategyPtr mallocStrategy;
+
+#ifdef HEXL_HAS_INACCEL
+/// @brief Allocator implementation using inaccel alloc and free
+struct InAccelStrategy : AllocatorBase {
+  void* allocate(size_t bytes_count) final {
+    return inaccel::alloc(bytes_count);
+  }
+
+  void deallocate(void* p, size_t n) final {
+    HEXL_UNUSED(n);
+    inaccel::free(p);
+  }
+};
+
+extern AllocatorStrategyPtr inaccelStrategy;
+#endif
 
 /// @brief Allocates memory aligned to Alignment-byte sized boundaries
 /// @details Alignment must be a power of two
