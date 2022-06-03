@@ -23,6 +23,9 @@ target_link_libraries(bench_hexl PRIVATE hexl benchmark::benchmark Threads::Thre
 if (HEXL_DEBUG)
     target_link_libraries(bench_hexl PRIVATE easyloggingpp)
 endif()
+if (HEXL_HAS_INACCEL)
+    target_link_libraries(bench_hexl PRIVATE coral-api)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(bench_hexl PRIVATE -Wall -Wextra -march=native -O3)

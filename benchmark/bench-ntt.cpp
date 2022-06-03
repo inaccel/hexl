@@ -66,6 +66,57 @@ BENCHMARK(BM_FwdNTTNativeRadix2Copy)
     ->Args({16384});
 //=================================================================
 
+#ifdef HEXL_HAS_INACCEL
+static void BM_FwdNTTNativeRadix2InPlaceInaccel(benchmark::State& state) {
+  size_t ntt_size = state.range(0);
+  AlignedVector64<uint64_t> modulus(1,
+      GeneratePrimes(1, 45, true, ntt_size)[0],
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+
+  auto input =
+      GenerateInsecureUniformRandomValuesInaccel(ntt_size, 0, modulus[0]);
+  NTT ntt(ntt_size, modulus[0], inaccelStrategy);
+
+  for (auto _ : state) {
+    ForwardTransformToBitReverseInaccel(
+        input.data(), input.data(), ntt_size, modulus.data(),
+        ntt.GetRootOfUnityPowers().data(),
+        ntt.GetPrecon64RootOfUnityPowers().data(), 2, 1, 1);
+  }
+}
+
+BENCHMARK(BM_FwdNTTNativeRadix2InPlaceInaccel)
+    ->Unit(benchmark::kMicrosecond)
+    ->Args({16384});
+//=================================================================
+
+static void BM_FwdNTTNativeRadix2CopyInaccel(benchmark::State& state) {
+  size_t ntt_size = state.range(0);
+  AlignedVector64<uint64_t> modulus(1,
+      GeneratePrimes(1, 45, true, ntt_size)[0],
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+
+  auto input =
+      GenerateInsecureUniformRandomValuesInaccel(ntt_size, 0, modulus[0]);
+  AlignedVector64<uint64_t> output(ntt_size, 1,
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+
+  NTT ntt(ntt_size, modulus[0], inaccelStrategy);
+
+  for (auto _ : state) {
+    ForwardTransformToBitReverseInaccel(
+        output.data(), input.data(), ntt_size, modulus.data(),
+        ntt.GetRootOfUnityPowers().data(),
+        ntt.GetPrecon64RootOfUnityPowers().data(), 2, 1, 1);
+  }
+}
+
+BENCHMARK(BM_FwdNTTNativeRadix2CopyInaccel)
+    ->Unit(benchmark::kMicrosecond)
+    ->Args({16384});
+//=================================================================
+#endif
+
 static void BM_FwdNTTNativeRadix4InPlace(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t modulus = GeneratePrimes(1, 45, true, ntt_size)[0];
@@ -285,6 +336,48 @@ BENCHMARK(BM_FwdNTTCopy)
 
 //=================================================================
 
+#ifdef HEXL_HAS_INACCEL
+// state[0] is the degree
+static void BM_FwdNTTInPlaceInaccel(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = state.range(0);
+  size_t modulus = GeneratePrimes(1, 61, true, ntt_size)[0];
+
+  auto input = GenerateInsecureUniformRandomValuesInaccel(ntt_size, 0, modulus);
+  NTT ntt(ntt_size, modulus, inaccelStrategy);
+
+  for (auto _ : state) {
+    ntt.ComputeForward(input.data(), input.data(), 1, 1, 1);
+  }
+}
+
+BENCHMARK(BM_FwdNTTInPlaceInaccel)
+    ->Unit(benchmark::kMicrosecond)
+    ->Args({16384});
+
+//=================================================================
+
+// state[0] is the degree
+static void BM_FwdNTTCopyInaccel(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = state.range(0);
+  size_t modulus = GeneratePrimes(1, 45, true, ntt_size)[0];
+
+  auto input = GenerateInsecureUniformRandomValuesInaccel(ntt_size, 0, modulus);
+  AlignedVector64<uint64_t> output(ntt_size, 1,
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+  NTT ntt(ntt_size, modulus, inaccelStrategy);
+
+  for (auto _ : state) {
+    ntt.ComputeForward(output.data(), input.data(), 1, 1, 1);
+  }
+}
+
+BENCHMARK(BM_FwdNTTCopyInaccel)
+    ->Unit(benchmark::kMicrosecond)
+    ->Args({16384});
+
+//=================================================================
+#endif
+
 static void BM_InvNTTInPlace(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t modulus = GeneratePrimes(1, 45, true, ntt_size)[0];
@@ -324,6 +417,45 @@ BENCHMARK(BM_InvNTTCopy)
     ->Args({1024})
     ->Args({4096})
     ->Args({16384});
+
+#ifdef HEXL_HAS_INACCEL
+static void BM_InvNTTInPlaceInaccel(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = state.range(0);
+  size_t modulus = GeneratePrimes(1, 45, true, ntt_size)[0];
+
+  auto input = GenerateInsecureUniformRandomValuesInaccel(ntt_size, 0, modulus);
+  NTT ntt(ntt_size, modulus, inaccelStrategy);
+
+  for (auto _ : state) {
+    ntt.ComputeInverse(input.data(), input.data(), 1, 1, 1);
+  }
+}
+
+BENCHMARK(BM_InvNTTInPlaceInaccel)
+    ->Unit(benchmark::kMicrosecond)
+    ->Args({16384});
+
+//=================================================================
+
+// state[0] is the degree
+static void BM_InvNTTCopyInaccel(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = state.range(0);
+  size_t modulus = GeneratePrimes(1, 45, true, ntt_size)[0];
+
+  auto input = GenerateInsecureUniformRandomValuesInaccel(ntt_size, 0, modulus);
+  AlignedVector64<uint64_t> output(ntt_size, 1,
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+  NTT ntt(ntt_size, modulus, inaccelStrategy);
+
+  for (auto _ : state) {
+    ntt.ComputeInverse(output.data(), input.data(), 1, 1, 1);
+  }
+}
+
+BENCHMARK(BM_InvNTTCopyInaccel)
+    ->Unit(benchmark::kMicrosecond)
+    ->Args({16384});
+#endif
 
 //=================================================================
 
@@ -379,6 +511,78 @@ BENCHMARK(BM_InvNTTNativeRadix2Copy)
     ->Args({16384});
 
 //=================================================================
+
+#ifdef HEXL_HAS_INACCEL
+static void BM_InvNTTNativeRadix2InPlaceInaccel(benchmark::State& state) {
+  size_t ntt_size = state.range(0);
+  AlignedVector64<uint64_t> modulus(1,
+      GeneratePrimes(1, 45, true, ntt_size)[0],
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+
+  auto input =
+      GenerateInsecureUniformRandomValuesInaccel(ntt_size, 0, modulus[0]);
+  NTT ntt(ntt_size, modulus[0], inaccelStrategy);
+
+  const AlignedVector64<uint64_t> root_of_unity = ntt.GetInvRootOfUnityPowers();
+  const AlignedVector64<uint64_t> precon_root_of_unity =
+      ntt.GetPrecon64InvRootOfUnityPowers();
+  AlignedVector64<uint64_t> inv_n(1,
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+  AlignedVector64<uint64_t> inv_n_w(1,
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+  const uint64_t W = root_of_unity[ntt_size - 1];
+  inv_n[0] = InverseMod(ntt_size, modulus[0]);
+  inv_n_w[0] = MultiplyMod(inv_n[0], W, modulus[0]);
+
+  for (auto _ : state) {
+    InverseTransformFromBitReverseInaccel(input.data(), input.data(), ntt_size,
+            modulus.data(), root_of_unity.data(),precon_root_of_unity.data(),
+            1, 1, inv_n.data(), inv_n_w.data(), 1);
+  }
+}
+
+BENCHMARK(BM_InvNTTNativeRadix2InPlaceInaccel)
+    ->Unit(benchmark::kMicrosecond)
+    ->Args({16384});
+
+//=================================================================
+
+static void BM_InvNTTNativeRadix2CopyInaccel(benchmark::State& state) {
+  size_t ntt_size = state.range(0);
+  AlignedVector64<uint64_t> modulus(1,
+      GeneratePrimes(1, 45, true, ntt_size)[0],
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+
+  auto input =
+      GenerateInsecureUniformRandomValuesInaccel(ntt_size, 0, modulus[0]);
+  AlignedVector64<uint64_t> output(ntt_size, 1,
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+  NTT ntt(ntt_size, modulus[0], inaccelStrategy);
+
+  const AlignedVector64<uint64_t> root_of_unity = ntt.GetInvRootOfUnityPowers();
+  const AlignedVector64<uint64_t> precon_root_of_unity =
+      ntt.GetPrecon64InvRootOfUnityPowers();
+  AlignedVector64<uint64_t> inv_n(1,
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+  AlignedVector64<uint64_t> inv_n_w(1,
+      AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+  const uint64_t W = root_of_unity[ntt_size - 1];
+  inv_n[0] = InverseMod(ntt_size, modulus[0]);
+  inv_n_w[0] = MultiplyMod(inv_n[0], W, modulus[0]);
+
+  for (auto _ : state) {
+    InverseTransformFromBitReverseInaccel(output.data(), input.data(), ntt_size,
+            modulus.data(), root_of_unity.data(),precon_root_of_unity.data(),
+            1, 1, inv_n.data(), inv_n_w.data(), 1);
+  }
+}
+
+BENCHMARK(BM_InvNTTNativeRadix2CopyInaccel)
+    ->Unit(benchmark::kMicrosecond)
+    ->Args({16384});
+
+//=================================================================
+#endif
 
 static void BM_InvNTTNativeRadix4InPlace(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);

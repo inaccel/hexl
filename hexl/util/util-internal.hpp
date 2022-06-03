@@ -70,5 +70,22 @@ inline AlignedVector64<uint64_t> GenerateInsecureUniformRandomValues(
   return values;
 }
 
+#ifdef HEXL_HAS_INACCEL
+/// Generates an inaccel vector of size random values drawn uniformly from
+/// [min_value, max_value)
+/// NOTE: this function is not a cryptographically secure random
+/// number generator and should be used for testing/benchmarking only
+inline AlignedVector64<uint64_t> GenerateInsecureUniformRandomValuesInaccel(
+    uint64_t size, uint64_t min_value, uint64_t max_value) {
+  AlignedVector64<uint64_t>
+      values(size, AlignedAllocator<uint64_t, 64>(inaccelStrategy));
+  auto generator = [&]() {
+    return GenerateInsecureUniformRandomValue(min_value, max_value);
+  };
+  std::generate(values.begin(), values.end(), generator);
+  return values;
+}
+#endif
+
 }  // namespace hexl
 }  // namespace intel
