@@ -1,11 +1,13 @@
 // Copyright (C) 2020-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef HEXL_FPGA_COMPATIBLE_KEYSWITCH
-
 #include "hexl/experimental/seal/key-switch.hpp"
 
+#ifdef HEXL_HAS_INACCEL
+#include "hexl/experimental/seal/key-switch-inaccel.hpp"
+#else
 #include "hexl/experimental/seal/key-switch-internal.hpp"
+#endif
 
 namespace intel {
 namespace hexl {
@@ -16,7 +18,11 @@ void KeySwitch(uint64_t* result, const uint64_t* t_target_iter_ptr, uint64_t n,
                const uint64_t* moduli, const uint64_t** k_switch_keys,
                const uint64_t* modswitch_factors,
                const uint64_t* root_of_unity_powers_ptr) {
+#ifdef HEXL_HAS_INACCEL
+  intel::hexl::internal::KeySwitchInAccel(
+#else
   intel::hexl::internal::KeySwitch(
+#endif
       result, t_target_iter_ptr, n, decomp_modulus_size, key_modulus_size,
       rns_modulus_size, key_component_count, moduli, k_switch_keys,
       modswitch_factors, root_of_unity_powers_ptr);
@@ -24,4 +30,3 @@ void KeySwitch(uint64_t* result, const uint64_t* t_target_iter_ptr, uint64_t n,
 
 }  // namespace hexl
 }  // namespace intel
-#endif

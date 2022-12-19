@@ -26,9 +26,18 @@ if (HEXL_EXPERIMENTAL)
         experimental/seal/dyadic-multiply.cpp
         experimental/seal/key-switch.cpp
         experimental/seal/dyadic-multiply-internal.cpp
-        experimental/seal/key-switch-internal.cpp
         experimental/misc/lr-mat-vec-mult.cpp
     )
+
+    if (HEXL_HAS_INACCEL)
+        list(APPEND NATIVE_SRC
+            experimental/seal/key-switch-inaccel.cpp
+        )
+    else()
+        list(APPEND NATIVE_SRC
+            experimental/seal/key-switch-internal.cpp
+        )
+    endif()
 endif()
 
 if (HEXL_HAS_AVX512DQ)
